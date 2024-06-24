@@ -1,15 +1,8 @@
-// MVC: 
-/*
-    M(Models): sẽ chứa các file liên quan đến đối tượng (class) và chỉ chứa class 
-    C(Controller): File điều hướng giao diện (trùng tên với tên của view (file html là giao diện))
-    V(View): Các file html là giao diện
-*/
 import { NhanVien } from "../models/NhanVien.js";
 import { stringToSlug, validateName, validateEmail, validateDate } from '../assets/util/method.js'
 let arrNhanVien = [];
 document.querySelector('#frmNhanVien').onsubmit = function (e) {
     e.preventDefault(); //ngăn reload trình duyệt
-    console.log('submit')
     //input: NhanVien: object NhanVien Lấy dữ liệu từ giao diện đưa vào object
     let nv = new NhanVien();
     let arrInput = document.querySelectorAll('#frmNhanVien .form-control');
@@ -70,7 +63,7 @@ window.validateInputData = function (arrInput) { //input là mảng
         } else if (input.id == 'luongCoBan' && (!input.value || input.value > 2000000 || input.value < 1000000)) {
             errorMess = 'Lương cơ bản 1 000 000 - 20 000 000, không để trống';
             break;
-        } else if (input.id == 'chucVu' && (!input.value || !['Giám đốc', 'Trưởng Phòng', 'Nhân Viên'].includes(input.value))) {
+        } else if (input.id == 'chucVu' && (!input.value || !['Giám đốc', 'Trưởng phòng', 'Nhân viên'].includes(input.value))) {
             errorMess = 'Chức vụ phải chọn chức vụ hợp lệ (Giám đốc, Trưởng Phòng, Nhân Viên)';
             break;
         } else if (input.id == 'gioLam' && (!input.value || input.value > 200 || input.value < 80)) {
@@ -81,28 +74,39 @@ window.validateInputData = function (arrInput) { //input là mảng
     return errorMess;
 }
 
+window.tinhTongLuong = function (chucVu, luongCoBan) { //input là mảng 
+    let heSoLuong = 1;
+    let tongLuong = 0;
+    if (chucVu == 'Giám đốc') {
+        heSoLuong = 3
+    } else if (chucVu == 'Trưởng Phòng') {
+        heSoLuong = 2
+    }
+    tongLuong = luongCoBan * heSoLuong;
+    return tongLuong;
+}
+
+window.xepLoaiNhanVien = function (gioLam) { //input là mảng 
+   let xepLoai = 'Trung bình';
+    if (gioLam >= 192) {
+        xepLoai = 'Xuất sắc';
+    } else if (gioLam >= 176) {
+        xepLoai = 'Giỏi';
+    } else if (gioLam >= 160) {
+        xepLoai = 'Khá';
+    }
+    return xepLoai;
+}
+
 window.renderTableNhanVien = function (arrNV) { //input là mảng 
     let htmlString = ''
     for(let nv of arrNV){
         // Tính tổng lương
-        let heSoLuong = 1;
-        let tongLuong = 0;
-        if (nv.chucVu == 'Giám đốc') {
-            heSoLuong = 3
-        } else if (nv.chucVu == 'Trưởng Phòng') {
-            heSoLuong = 2
-        }
-        tongLuong = nv.luongCoBan * heSoLuong;
+        let tongLuong = tinhTongLuong(nv.chucVu, nv.luongCoBan);
 
         // Xếp loại
-        let xepLoai = 'Trung bình';
-        if (nv.gioLam >= 192) {
-            xepLoai = 'Xuất sắc';
-        } else if (nv.gioLam >= 176) {
-            xepLoai = 'Giỏi';
-        } else if (nv.gioLam >= 160) {
-            xepLoai = 'Khá';
-        }
+        let xepLoai = xepLoaiNhanVien(nv.gioLam);
+
         htmlString +=`
             <tr>
                 <td>${nv.taiKhoan}</td>
@@ -216,39 +220,21 @@ document.querySelector('#btnCapNhat').onclick = function(e) {
 document.querySelector('#frmTimKiem').onsubmit = function(e) {
     e.preventDefault();
     //input: keyword,loaiTimKiem
-    let tuKhoa = document.querySelector('#tuKhoa').value;
+    let tuKhoa = document.querySelector('#searchName').value;
     tuKhoa = stringToSlug(tuKhoa);
-    let loai = document.querySelector('#loaiTimKiem').value;
     
     let arrNVTimKiem = [];
     //output: arr được filter theo từ khoá
-    if(loai === 'sdt') {
-        arrNVTimKiem = arrNhanVien.filter(nv => stringToSlug(nv.soDienThoai).search(tuKhoa) !== -1);
-    }else if (loai === 'ten') {
-        arrNVTimKiem = arrNhanVien.filter(nv => stringToSlug(nv.hoVaTen).search(tuKhoa) !== -1);
-    }
+    arrNVTimKiem = arrNhanVien.filter(nv => stringToSlug(xepLoaiNhanVien(nv.gioLam)).search(tuKhoa) !== -1);
     
     //Sau khi filter thì dùng mảng kết quả render lại table
     renderTableNhanVien(arrNVTimKiem);
-    if(arrNVTimKiem.length > 0)
-    {   
+    if(arrNVTimKiem.length > 0) {   
         document.querySelector('#ketQuaTimKiem').className = 'alert alert-success mt-2';
         document.querySelector('#ketQuaTimKiem').innerHTML = `Tìm thấy ${arrNVTimKiem.length} nhân viên`;
-    }else {
+    } else {
         document.querySelector('#ketQuaTimKiem').className = 'alert alert-danger mt-2';
         document.querySelector('#ketQuaTimKiem').innerHTML = `Không tìm thấy nhân viên nào`;
     }
 
 }
-
-/*
-    tuKhoa = 'Nguyễn Văn A' => nguyen-van-a
-    SEO Title
-    arrNV = [
-        {taiKhoan:1,hoVaTen:'nguyen-van-a',...} //index = 0
-        {taiKhoan:2,hoVaTen:'nguyen-van-b',...},// index = 1
-        {taiKhoan:3,hoVaTen:'Nguyễn Văn C',...}, // index =2
-        {taiKhoan:abc,hoVaTen:'Nguyễn Văn C',...}, // index =3
-    ]
-
-*/
